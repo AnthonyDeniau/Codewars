@@ -2,29 +2,18 @@ import itertools
 from functools import reduce
 import copy
 
-def get_clue(values):
-    # store is [higher_seen_building, number_of_skyscrapper_visible]
-    return reduce(
-        lambda store, val: 
-            [store[0] if val < store[0] else val,  # update the higher building if this one is higher
-            store[1] + 1 if val > store[0] else store[1]],
-        values,
-        [0, 0])[1]
 
-def get_candidates_for_line(clue=0):
-    if clue == 0:
-        return list(itertools.permutations(range(1, 8), 7))
-    else:
-        return list(filter(lambda vals: get_clue(vals) == clue, itertools.permutations(range(1, 8), 7)))
+COLUMN = 1
+ROW = 2
+NORMAL = 1
+REVERSED = 2
 
-def is_line_containing_values_in_cell(values, cell, line_candidate):
-    return line_candidate[cell] in values
 
 class Cell(object):
-    def __init__(self, row, col):
+    def __init__(self, row, col, size):
         self.row = row
         self.col = col
-        self.candidates = set(range(1, 8))
+        self.candidates = set(range(1, size + 1))
     
     def is_resolved(self):
         return len(self.candidates) == 1
@@ -33,42 +22,63 @@ class Cell(object):
     def value(self):
         return list(self.candidates)[0]
 
-COLUMN = 1
-ROW = 2
-NORMAL = 1
-REVERSED = 2
-
-line_candidates_by_clue = list(map(get_candidates_for_line, range(0, 8)))
-line_reverse_candidates_by_clue = list(map(lambda u: list(map(lambda v: tuple(reversed(v)), u)), line_candidates_by_clue))
-
 class TheGrid(object):
+    """
+    The grid is composed of Cell of $size width and $size height
+    Calculate all the possible solution for each line following clues
+    Dedu
+    """
     def __init__(self, size):
         self.size = size
-        self.cells = [[Cell(row, col) for col in range(size)] for row in range(size)]
-        self.row_candidates = [set(itertools.permutations(range(1, 8), 7)) for i in range(7)]
-        self.col_candidates = [set(itertools.permutations(range(1, 8), 7)) for i in range(7)]
+        self.line_candidates_by_clue = list(map(self.get_candidates_for_line, range(0, self.size + 1)))
+        self.line_reverse_candidates_by_clue = list(map(lambda u: list(map(lambda v: tuple(reversed(v)), u)), self.line_candidates_by_clue))
+        self.cells = [[Cell(row, col, self.size) for col in range(size)] for row in range(size)]
+        self.row_candidates = [set(itertools.permutations(range(1, self.size + 1), self.size)) for i in range(self.size)]
+        self.col_candidates = [set(itertools.permutations(range(1, self.size + 1), self.size)) for i in range(self.size)]
+    
+    
+    def convert_clockwise_position(self, clockwise_position):
+        if clockwise_position < self.size:
+            return COLUMN, clockwise_position, NORMAL
+        elif clockwise_position >= self.size and clockwise_position < (self.size * 2):
+            return ROW, clockwise_position - self.size, REVERSED
+        elif clockwise_position >= (self.size * 2) and clockwise_position < (self.size * 3):
+            return COLUMN, (self.size - 1) - (clockwise_position - (self.size * 2)), REVERSED
+        else:
+            return ROW, (self.size - 1) - (clockwise_position - (self.size * 3)), NORMAL
+
+    def get_line_candidates(self, clue, direction):
+        if direction == NORMAL:
+            return copy.copy(self.line_candidates_by_clue[clue])
+        else:
+            return copy.copy(self.line_reverse_candidates_by_clue[clue])
     
     @staticmethod
-    def convert_clockwise_position(clockwise_position):
-        if clockwise_position < 7:
-            return COLUMN, clockwise_position, NORMAL
-        elif clockwise_position >= 7 and clockwise_position < 14:
-            return ROW, clockwise_position - 7, REVERSED
-        elif clockwise_position >= 14 and clockwise_position < 21:
-            return COLUMN, 6 - (clockwise_position - 14), REVERSED
-        else:
-            return ROW, 6 - (clockwise_position - 21), NORMAL
+    def get_clue(values):
+        """ 
+        calculate the number of visible skyscrapper
+        """
+        # store is [higher_building_seen, number_of_skyscrapper_visible]
+        return reduce(
+            lambda store, val: 
+                [store[0] if val < store[0] else val,  # update the higher building if this one is higher
+                store[1] + 1 if val > store[0] else store[1]],
+            values,
+            [0, 0])[1]
 
-    @staticmethod
-    def get_line_candidates(clue, direction):
-        if direction == NORMAL:
-            return copy.deepcopy(line_candidates_by_clue[clue])
+    def get_candidates_for_line(self, clue=0):
+        """
+        calculate all the possibility for a line (Row or Column) that satifies the given clue
+        """
+        if clue == 0:
+            return list(itertools.permutations(range(1, self.size + 1), self.size))
         else:
-            return copy.deepcopy(line_reverse_candidates_by_clue[clue])
+            return list(filter(lambda vals: TheGrid.get_clue(vals) == clue, itertools.permutations(range(1, self.size + 1), self.size)))
+
 
     def _update_cells_candidates(self, typeOfLine, number):
         cells_candidates = self._get_cells_candidate(typeOfLine, number)
-        for i in range(0, 7):
+        for i in range(0, self.size):
             if typeOfLine == ROW:
                 self.cells[number][i].candidates = self.cells[number][i].candidates.intersection(cells_candidates[i])
             else:
@@ -100,13 +110,22 @@ class TheGrid(object):
         self._update_line_candidates(typeOfLine, number, line_candidates)
 
     def resolve(self):
-        for number in range(7):
+        for number in range(self.size):
             self._update_cells_candidates(ROW, number)
             self._update_cells_candidates(COLUMN, number)
         self._backprogration_lines_candidates()
     
     def get_result(self):
         return [[cell.value for cell in row] for row in self.cells]
+    
+    def get_result_tuple(self):
+        result = ()
+        for row in self.cells:
+            row_result = ()
+            for cell in row:
+                row_result += (cell.value,)
+            result += (row_result,)
+        return result
     
     def is_resolved(self):
         is_resolved = True
@@ -128,8 +147,14 @@ def solve_puzzle(clues):
     while grid.is_resolved() == False:
         iterations += 1
         grid.resolve()
-    print(iterations)
-    return grid.get_result()
+    return grid.get_result_tuple()
 
-grid = solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])
+
+print(
+    solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])
+    ==
+    [[1, 5, 6, 7, 4, 3, 2], [2, 7, 4, 5, 3, 1, 6], [3, 4, 5, 6, 7, 2, 1], [4, 6, 3, 1, 2, 7, 5], [5, 3, 1, 2, 6, 4, 7], [6, 2, 7, 3, 1, 5, 4], [7, 1, 2, 4, 5, 6, 3]]
+    )
+
+# cProfile.run('solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])')
 #print(list(grid.cells[2][0].candidates))
