@@ -1,4 +1,5 @@
 import itertools
+import cProfile
 from functools import reduce
 import copy
 
@@ -28,15 +29,33 @@ class TheGrid(object):
     Calculate all the possible solution for each line following clues
     Dedu
     """
+    size = 7
+    line_candidates_by_clue = []
+    line_reverse_candidates_by_clue = []
     def __init__(self, size):
-        self.size = size
-        self.line_candidates_by_clue = list(map(self.get_candidates_for_line, range(0, self.size + 1)))
-        self.line_reverse_candidates_by_clue = list(map(lambda u: list(map(lambda v: tuple(reversed(v)), u)), self.line_candidates_by_clue))
-        self.cells = [[Cell(row, col, self.size) for col in range(size)] for row in range(size)]
+        self.get_line_candidates_by_clue()
+        self.get_line_reverse_candidates_by_clue()
+        self.cells = [[Cell(row, col, self.size) for col in range(self.size)] for row in range(self.size)]
         self.row_candidates = [set(itertools.permutations(range(1, self.size + 1), self.size)) for i in range(self.size)]
         self.col_candidates = [set(itertools.permutations(range(1, self.size + 1), self.size)) for i in range(self.size)]
     
-    
+    @classmethod
+    def get_line_candidates_by_clue(cls):
+        if len(cls.line_candidates_by_clue) != 0:
+            print("retrieve cache for get_line_candidates_by_clue")
+            return
+        else:
+
+            print("process get_line_candidates_by_clue")
+            cls.line_candidates_by_clue = list(map(cls.get_candidates_for_line, range(0, cls.size + 1)))
+
+    @classmethod
+    def get_line_reverse_candidates_by_clue(cls):
+        if len(cls.line_reverse_candidates_by_clue) != 0:
+            return
+        else:
+            cls.line_reverse_candidates_by_clue = list(map(lambda u: list(map(lambda v: tuple(reversed(v)), u)), cls.line_candidates_by_clue))
+
     def convert_clockwise_position(self, clockwise_position):
         if clockwise_position < self.size:
             return COLUMN, clockwise_position, NORMAL
@@ -66,14 +85,15 @@ class TheGrid(object):
             values,
             [0, 0])[1]
 
-    def get_candidates_for_line(self, clue=0):
+    @classmethod
+    def get_candidates_for_line(cls, clue=0):
         """
         calculate all the possibility for a line (Row or Column) that satifies the given clue
         """
         if clue == 0:
-            return list(itertools.permutations(range(1, self.size + 1), self.size))
+            return list(itertools.permutations(range(1, cls.size + 1), cls.size))
         else:
-            return list(filter(lambda vals: TheGrid.get_clue(vals) == clue, itertools.permutations(range(1, self.size + 1), self.size)))
+            return list(filter(lambda vals: TheGrid.get_clue(vals) == clue, itertools.permutations(range(1, cls.size + 1), cls.size)))
 
 
     def _update_cells_candidates(self, typeOfLine, number):
@@ -147,7 +167,7 @@ def solve_puzzle(clues):
     while grid.is_resolved() == False:
         iterations += 1
         grid.resolve()
-    return grid.get_result_tuple()
+    return grid.get_result()
 
 
 print(
@@ -156,5 +176,40 @@ print(
     [[1, 5, 6, 7, 4, 3, 2], [2, 7, 4, 5, 3, 1, 6], [3, 4, 5, 6, 7, 2, 1], [4, 6, 3, 1, 2, 7, 5], [5, 3, 1, 2, 6, 4, 7], [6, 2, 7, 3, 1, 5, 4], [7, 1, 2, 4, 5, 6, 3]]
     )
 
-# cProfile.run('solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])')
+cProfile.run('''solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])''')
 #print(list(grid.cells[2][0].candidates))
