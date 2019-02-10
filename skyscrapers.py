@@ -42,11 +42,11 @@ class TheGrid(object):
     @classmethod
     def get_line_candidates_by_clue(cls):
         if len(cls.line_candidates_by_clue) != 0:
-            print("retrieve cache for get_line_candidates_by_clue")
+            # print("retrieve cache for get_line_candidates_by_clue")
             return
         else:
 
-            print("process get_line_candidates_by_clue")
+            # print("process get_line_candidates_by_clue")
             cls.line_candidates_by_clue = list(map(cls.get_candidates_for_line, range(0, cls.size + 1)))
 
     @classmethod
@@ -123,11 +123,38 @@ class TheGrid(object):
                 self.row_candidates[x] = set(filter(lambda l: l[y] in cell.candidates, self.row_candidates[x]))
                 self.col_candidates[y] = set(filter(lambda l: l[x] in cell.candidates, self.col_candidates[y]))
                 #print("x: [%d] y:[%d] len row:[%d] len col: [%d]" % (x, y, len(self.row_candidates[x]), len(self.col_candidates[y])))
+    
+    
+    def _backprogration_lines_candidates_2(self, typeOfLine, number):
+        if typeOfLine == ROW:
+            for y, cell in enumerate(self.cells[number]):
+                self.col_candidates[y] = set(filter(lambda l: l[number] in cell.candidates, self.col_candidates[y]))
+        else:
+            for x, row in enumerate(self.cells):
+                self.row_candidates[x] = set(filter(lambda l: l[number] in row[number].candidates, self.row_candidates[x]))
 
     def process_clue(self, clue, clockwise_position):
         typeOfLine, number, direction = self.convert_clockwise_position(clockwise_position)
         line_candidates = self.get_line_candidates(clue, direction)
         self._update_line_candidates(typeOfLine, number, line_candidates)
+
+
+    def resolve_2(self):
+        lines = tuple(map(lambda i: {
+            'index': i, 
+            'type': ROW, 
+            'len': len(self.row_candidates[i])
+            }, range(self.size)))
+        lines += tuple(map(lambda i: {
+            'index': i, 
+            'type': COLUMN, 
+            'len': len(self.col_candidates[i])
+            }, range(self.size)))
+
+        for line in sorted(lines, key=lambda l: l['len']):
+            self._update_cells_candidates(line['type'], line['index'])
+            self._backprogration_lines_candidates_2(line['type'], line['index'])
+
 
     def resolve(self):
         for number in range(self.size):
@@ -166,7 +193,7 @@ def solve_puzzle(clues):
     iterations = 0
     while grid.is_resolved() == False:
         iterations += 1
-        grid.resolve()
+        grid.resolve_2()
     return grid.get_result()
 
 
@@ -176,40 +203,9 @@ print(
     [[1, 5, 6, 7, 4, 3, 2], [2, 7, 4, 5, 3, 1, 6], [3, 4, 5, 6, 7, 2, 1], [4, 6, 3, 1, 2, 7, 5], [5, 3, 1, 2, 6, 4, 7], [6, 2, 7, 3, 1, 5, 4], [7, 1, 2, 4, 5, 6, 3]]
     )
 
-cProfile.run('''solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
-solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])''')
+cProfile.run('''
+for i in range(100):
+    solve_puzzle([7,0,0,0,2,2,3, 0,0,3,0,0,0,0, 3,0,3,0,0,5,0, 0,0,0,0,5,0,4])
+    solve_puzzle([0,2,3,0,2,0,0, 5,0,4,5,0,4,0, 0,4,2,0,0,0,6, 5,2,2,2,2,4,1])
+''')
 #print(list(grid.cells[2][0].candidates))
